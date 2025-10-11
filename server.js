@@ -18,6 +18,7 @@ const users = {}; // { username: { shards: 0, redeemedCodes: [] } }
 // 🎟️ Example redeem codes
 const redeemCodes = {
   "ZENYXONTOP": 200,
+  "MYSTICSHARD": 30
 };
 
 // =====================
