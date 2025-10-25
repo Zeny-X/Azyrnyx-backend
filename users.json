@@ -1,0 +1,16 @@
+{
+  "zenyx": {
+    "password": "$2b$12$l3JKjd/mrkfCtr5537sYv.QqkQEqbdiCVVOeW9EzSTlr4o0nkPtEy",
+    "token": null,
+    "shards": 250,
+    "redeemedCodes": [],
+    "quests": {}
+  },
+  "friend": {
+    "password": "$2b$12$PBxBGCZb4UsVUiEiuuITWOFZ389.kYIrgEOpgtq22Wo9jCXFRdL4u",
+    "token": null,
+    "shards": 40,
+    "redeemedCodes": [],
+    "quests": {}
+  }
+}
