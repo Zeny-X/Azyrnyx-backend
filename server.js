@@ -1,82 +1,71 @@
 import express from "express";
 import cors from "cors";
-import bodyParser from "body-parser";
+import fs from "fs";
 
 const app = express();
-const PORT = process.env.PORT || 10000;
-
+app.use(express.json());
 app.use(cors());
-app.use(bodyParser.json());
 
-// ============================
-// Simple in-memory user database
-// ============================
-const users = {
-  "testaccount": { password: "test1234", shards: 0 }
-};
+// Load users from file
+const USERS_FILE = "users.json";
+let users = {};
 
-// ============================
-// Redeem Codes
-// ============================
-const redeemCodes = {
-  "ZENYXONTOP": 200,
-  "MYSTICSHARD": 500
-};
+if (fs.existsSync(USERS_FILE)) {
+  users = JSON.parse(fs.readFileSync(USERS_FILE, "utf8"));
+}
 
-// ============================
-// Login / Register
-// ============================
+// ✅ SIGNUP (Create User)
+app.post("/api/signup", (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password)
+    return res.status(400).json({ success: false, message: "Missing username or password" });
+
+  if (users[username])
+    return res.status(400).json({ success: false, message: "User already exists" });
+
+  users[username] = { password, shards: 0 };
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+
+  return res.json({ success: true, message: "User created successfully" });
+});
+
+// ✅ LOGIN
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ success: false, message: "Missing fields" });
-  }
 
-  // If user doesn't exist, create it
-  if (!users[username]) {
-    users[username] = { password, shards: 0 };
-    return res.json({ success: true, message: "Account created", shards: 0 });
-  }
+  if (!users[username] || users[username].password !== password)
+    return res.status(400).json({ success: false, message: "Invalid Username or Password" });
 
-  // If user exists, validate password
-  if (users[username].password === password) {
-    return res.json({ success: true, message: "Login successful", shards: users[username].shards });
-  }
-
-  return res.status(400).json({ success: false, message: "Invalid Username or Password" });
+  return res.json({
+    success: true,
+    username,
+    shards: users[username].shards || 0
+  });
 });
 
-// ============================
-// Redeem code endpoint
-// ============================
+// ✅ REDEEM
 app.post("/api/redeem", (req, res) => {
   const { username, code } = req.body;
-  if (!username || !code) {
-    return res.status(400).json({ success: false, message: "Missing fields" });
-  }
+  const redeemCodes = {
+    "ZENYXONTOP": 200,
+    "MYSTICSHARD": 350,
+    "SHARDRAIN": 100
+  };
 
-  const amount = redeemCodes[code];
-  if (!amount) {
-    return res.status(400).json({ success: false, message: "Invalid code" });
-  }
+  if (!redeemCodes[code])
+    return res.json({ success: false, message: "Invalid Code" });
 
-  users[username].shards += amount;
-  delete redeemCodes[code]; // One-time use code
-  return res.json({ success: true, message: `Redeemed ${amount} shards!`, shards: users[username].shards });
+  users[username].shards += redeemCodes[code];
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+
+  return res.json({
+    success: true,
+    newShards: users[username].shards,
+    message: `Code Redeemed! +${redeemCodes[code]} Shards`
+  });
 });
 
-// ============================
-// Sync Shards (when page reloads)
-// ============================
-app.post("/api/sync", (req, res) => {
-  const { username } = req.body;
-  if (!username || !users[username]) {
-    return res.status(400).json({ success: false, message: "User not found" });
-  }
-  return res.json({ success: true, shards: users[username].shards });
-});
-
-// ============================
-app.listen(PORT, () => {
-  console.log(`✅ Azyrnyx Backend running on port ${PORT}`);
-});
+// ✅ SERVER LISTEN
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`✅ Azyrnyx Backend running on port ${PORT}`));
